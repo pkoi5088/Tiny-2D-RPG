@@ -203,3 +203,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Project
+Client/Assets/Resources/ThirdParty
+Client/Assets/Resources/ThirdParty.*
+Client/Assets/**/Socket.IO
+Client/Assets/**/Socket.IO.*
+Client/Assets/**/SPUM
+Client/Assets/**/SPUM.*
