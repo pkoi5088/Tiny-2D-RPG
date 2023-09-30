@@ -23,10 +23,19 @@ public class MyPlayerController : MonoBehaviour
         Right,
     }
 
+    // TODO: speed 관련 서버붙일 때 없애기
+    [SerializeField]
+    float _moveSpeed = 5.0f; // 이동속도
+    [SerializeField]
+    float _ag = 0.3f; // 중력 가속도 (질량은 1.0f로 가정)
+    [SerializeField]
+    float _jumpSpeed = 17.0f; // 중력 가속도 (질량은 1.0f로 가정)
+
     Animator _animator;
     bool _movePressed = false;
-    public Vector2 Position = Vector2.zero;
+    Coroutine _coroutine = null;
 
+    Vector3 _speedVec = new Vector3(0, 0, 0); // 속도
     PlayerState _state = PlayerState.Idle;
     public PlayerState State
     {
@@ -50,6 +59,10 @@ public class MyPlayerController : MonoBehaviour
                 return;
 
             _dir = value;
+            if (value == MoveDir.Left)
+                transform.localScale = new Vector3(1, 1, 1);
+            else
+                transform.localScale = new Vector3(-1, 1, 1);
             UpdateAnimation();
         }
     }
@@ -68,7 +81,14 @@ public class MyPlayerController : MonoBehaviour
 
     void Update()
     {
+        // 상태기반 Update 실행
         UpdateController();
+        
+        //이동 적용
+        ApplyMove();
+
+        // 물리 적용
+        ApplyPhysic();
     }
 
     void UpdateAnimation()
@@ -82,15 +102,6 @@ public class MyPlayerController : MonoBehaviour
         }
         else if (State == PlayerState.Walk)
         {
-            switch (Dir)
-            {
-                case MoveDir.Left:
-                    transform.localScale = new Vector3(1, 1, 1);
-                    break;
-                case MoveDir.Right:
-                    transform.localScale = new Vector3(-1, 1, 1);
-                    break;
-            }
             _animator.Play("Walk");
         }
         else if (State == PlayerState.Jump)
@@ -114,6 +125,7 @@ public class MyPlayerController : MonoBehaviour
         {
             case PlayerState.Idle:
             case PlayerState.Walk:
+            case PlayerState.Jump:
                 GetDirInput();
                 break;
         }
@@ -127,6 +139,10 @@ public class MyPlayerController : MonoBehaviour
 
             case PlayerState.Walk:
                 UpdateWalk();
+                break;
+
+            case PlayerState.Jump:
+                UpdateJump();
                 break;
 
             case PlayerState.Attack:
@@ -158,6 +174,21 @@ public class MyPlayerController : MonoBehaviour
 
     void UpdateIdle()
     {
+        // 공격 판정 먼저
+        if (Input.GetKey(KeyCode.A))
+        {
+            State = PlayerState.Attack;
+            return;
+        }
+
+        // 점프 판정
+        if (Input.GetKey(KeyCode.Space))
+        {
+            State = PlayerState.Jump;
+            return;
+        }
+
+        // 이동 판정
         if (_movePressed)
         {
             State = PlayerState.Walk;
@@ -167,6 +198,21 @@ public class MyPlayerController : MonoBehaviour
 
     void UpdateWalk()
     {
+        // 공격 판정 먼저
+        if (Input.GetKey(KeyCode.A))
+        {
+            State = PlayerState.Attack;
+            return;
+        }
+
+        // 점프 판정
+        if (Input.GetKey(KeyCode.Space))
+        {
+            State = PlayerState.Jump;
+            return;
+        }
+
+        // 이동 판정
         if (!_movePressed)
         {
             State = PlayerState.Idle;
@@ -174,14 +220,88 @@ public class MyPlayerController : MonoBehaviour
         }
     }
 
+    void UpdateJump()
+    {
+        if (_coroutine == null)
+        {
+            _speedVec += Vector3.up * _jumpSpeed;
+            _coroutine = StartCoroutine("CoStartJump");
+        }
+    }
+
+    void ApplyMove()
+    {
+        transform.position += Time.deltaTime * _speedVec;
+
+        // TODO: 위치 보정
+        Vector3 before = transform.position;
+        if (before.y < 0)
+        {
+            before.y = Mathf.Max(before.y, 0);
+            transform.position = before;
+            _speedVec.y = 0;
+        }
+
+
+    }
+
+    // _speedVec만 변화
+    void ApplyPhysic()
+    {
+        Vector3 nextPosVec = _speedVec;
+
+        // 방향키
+        if (_movePressed && (State == PlayerState.Walk || State == PlayerState.Jump))
+        {
+            if (Dir == MoveDir.Left)
+            {
+                nextPosVec += Vector3.left * _moveSpeed;
+                nextPosVec.x = Mathf.Max(nextPosVec.x, -_moveSpeed);
+            }
+            else if (Dir == MoveDir.Right)
+            {
+                nextPosVec += Vector3.right * _moveSpeed;
+                nextPosVec.x = Mathf.Min(nextPosVec.x, _moveSpeed);
+            }
+        }
+        else
+        {
+            nextPosVec.x = 0;
+        }
+
+        // 중력 적용
+        nextPosVec += Vector3.down * _ag;
+
+        _speedVec = nextPosVec;
+    }
+
     void UpdateAttack()
     {
-
+        if (_coroutine == null)
+        {
+            _coroutine = StartCoroutine("CoStartAttack");
+        }
     }
 
     void UpdateDead()
     {
 
+    }
+
+    IEnumerator CoStartAttack()
+    {
+        // 대기 시간
+        yield return new WaitForSeconds(0.45f);
+        State = PlayerState.Idle;
+        _coroutine = null;
+    }
+
+    IEnumerator CoStartJump()
+    {
+        // 대기 시간
+        yield return new WaitForSeconds(0.55f);
+        State = PlayerState.Idle;
+        _coroutine = null;
     }
 
     private void LateUpdate()
