@@ -24,12 +24,9 @@ public class MyPlayerController : MonoBehaviour
     }
 
     // TODO: speed 관련 서버붙일 때 없애기
-    [SerializeField]
     float _moveSpeed = 5.0f; // 이동속도
-    [SerializeField]
-    float _ag = 0.3f; // 중력 가속도 (질량은 1.0f로 가정)
-    [SerializeField]
-    float _jumpSpeed = 17.0f; // 중력 가속도 (질량은 1.0f로 가정)
+    float _ag = 0.4f; // 중력 가속도 (질량은 1.0f로 가정)
+    float _jumpSpeed = 17.0f; // 점프력 (질량은 1.0f로 가정)
 
     Animator _animator;
     bool _movePressed = false;
@@ -81,6 +78,12 @@ public class MyPlayerController : MonoBehaviour
 
     void Update()
     {
+        // TEST
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            Debug.Log(transform.position);
+        }
+
         // 상태기반 Update 실행
         UpdateController();
         
@@ -231,18 +234,24 @@ public class MyPlayerController : MonoBehaviour
 
     void ApplyMove()
     {
-        transform.position += Time.deltaTime * _speedVec;
+        Vector3 nextPos = transform.position;
 
-        // TODO: 위치 보정
-        Vector3 before = transform.position;
-        if (before.y < 0)
+        // X 축
+        nextPos += Time.deltaTime * new Vector3(_speedVec.x, 0, 0);
+        if (!Managers.Map.CanGo(nextPos))
         {
-            before.y = Mathf.Max(before.y, 0);
-            transform.position = before;
-            _speedVec.y = 0;
+            nextPos = Managers.Map.GetCorrectionPos(transform.position, nextPos);
+        }
+        transform.position = nextPos;
+
+        // Y 축
+        nextPos += Time.deltaTime * new Vector3(0, _speedVec.y, 0);
+        if (!Managers.Map.CanGo(nextPos))
+        {
+            nextPos = Managers.Map.GetCorrectionPos(transform.position, nextPos);
         }
 
-
+        transform.position = nextPos;
     }
 
     // _speedVec만 변화
@@ -271,6 +280,10 @@ public class MyPlayerController : MonoBehaviour
 
         // 중력 적용
         nextPosVec += Vector3.down * _ag;
+        if (Managers.Map.IsStand(transform.position))
+        {
+            nextPosVec.y = 0;
+        }
 
         _speedVec = nextPosVec;
     }
@@ -299,9 +312,16 @@ public class MyPlayerController : MonoBehaviour
     IEnumerator CoStartJump()
     {
         // 대기 시간
-        yield return new WaitForSeconds(0.55f);
-        State = PlayerState.Idle;
-        _coroutine = null;
+        while (true)
+        {
+            yield return new WaitForSeconds(0.1f);
+            if (Managers.Map.IsStand(transform.position))
+            {
+                State = PlayerState.Idle;
+                _coroutine = null;
+                yield break;
+            }
+        }
     }
 
     private void LateUpdate()
