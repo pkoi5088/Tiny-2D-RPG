@@ -82,6 +82,8 @@ public class MyPlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Z))
         {
             Debug.Log(transform.position);
+            Debug.Log(Managers.Map.FindClosePos(transform.position));
+            Debug.Log(Managers.Map.SceneToArr(Managers.Map.FindClosePos(transform.position)));
         }
 
         // 상태기반 Update 실행
@@ -227,7 +229,6 @@ public class MyPlayerController : MonoBehaviour
     {
         if (_coroutine == null)
         {
-            _speedVec += Vector3.up * _jumpSpeed;
             _coroutine = StartCoroutine("CoStartJump");
         }
     }
@@ -311,6 +312,7 @@ public class MyPlayerController : MonoBehaviour
 
     IEnumerator CoStartJump()
     {
+        _speedVec += Vector3.up * _jumpSpeed;
         // 대기 시간
         while (true)
         {

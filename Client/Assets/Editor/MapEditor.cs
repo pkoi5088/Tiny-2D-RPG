@@ -52,6 +52,9 @@ public class MapEditor
                 }
 
                 // 추가 세부사항 표기
+                // 기본 배경ID는 1, Y값은 4
+                writer.WriteLine("1");
+                writer.WriteLine("4");
             }
         }
     }

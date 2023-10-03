@@ -31,12 +31,12 @@ public class MapManager
         return !_collision[pos.y, pos.x];
     }
 
-    public bool IsStand(Vector3 Pos)
+    public bool IsStand(Vector3 currentPos)
     {
-        if (Pos.x < MinX || Pos.x >= MaxX) return false;
-        if (Pos.y < MinY || Pos.y >= MaxY) return false;
+        if (currentPos.x < MinX || currentPos.x >= MaxX) return false;
+        if (currentPos.y < MinY || currentPos.y >= MaxY) return false;
 
-        Vector3 standingPos = new Vector3(Pos.x, Pos.y - 0.01f, 0);
+        Vector3 standingPos = new Vector3(currentPos.x, currentPos.y - 0.01f, 0);
 
         return !CanGo(standingPos);
     }
@@ -101,10 +101,34 @@ public class MapManager
         }
 
         // 배경 설정하기
-        SpriteRenderer background = Util.FindChild<SpriteRenderer>(go, "Background1", true);
-        if (background == null)
-            return;
-        Debug.Log(background.sprite.bounds.size.x);
+        int backgroundId = int.Parse(reader.ReadLine());
+        float settingY = float.Parse(reader.ReadLine());
+        SetBackground(go, backgroundId, settingY);
+    }
+
+    public void SetBackground(GameObject parentGo, int backgroundId, float settingY)
+    {
+        string backgroundName = "Background" + backgroundId.ToString("000");
+        float width = -1.0f, x = MinX;
+
+        while (x < MaxX)
+        {
+            // 생성
+            GameObject go = Managers.Resource.Instantiate($"BackGround/{backgroundName}", parentGo.transform);
+
+            // 배경 너비 구하기
+            if (width == -1.0f)
+            {
+                SpriteRenderer sprite = Util.FindChild<SpriteRenderer>(go, "Background1", false);
+
+                width = sprite.bounds.size.x;
+            }
+
+            // 배경 위치 조정
+            go.transform.position = new Vector3(x, settingY, 0);
+
+            x += width;
+        }
     }
 
     public void DestroyMap()
@@ -131,8 +155,8 @@ public class MapManager
     {
         Vector2Int ret = pos;
 
-        ret.x = MaxX + 1 + ret.x;
-        ret.y = MaxY - 1 - ret.y;
+        ret.x = ret.x - MinX;
+        ret.y = MaxY - ret.y - 1;
 
         return ret;
     }
@@ -141,8 +165,8 @@ public class MapManager
     {
         Vector2Int ret = pos;
 
-        ret.x = ret.x - (MaxX + 1);
-        ret.y = MaxY - 1 - ret.y;
+        ret.x = ret.x + MinX;
+        ret.y = ret.y + MinY;
 
         return ret;
     }
