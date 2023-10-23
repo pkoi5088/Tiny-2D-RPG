@@ -7,7 +7,7 @@ public class MapManager
 {
     public Grid CurrentGrid { get; private set; }
 
-    // MinX <= X < MaxX°¡ ½ÇÁ¦ ÇÊµå ÁÂÇ¥
+    // MinX <= X < MaxXê°€ ì‹¤ì œ í•„ë“œ ì¢Œí‘œ
     public int MinX { get; set; }
     public int MaxX { get; set; }
     public int MinY { get; set; }
@@ -25,7 +25,7 @@ public class MapManager
 
         Vector2Int pos = FindClosePos(Pos);
 
-        // ÁÂÇ¥ º¯È¯
+        // ì¢Œí‘œ ë³€í™˜
         pos = SceneToArr(pos);
 
         return !_collision[pos.y, pos.x];
@@ -76,7 +76,7 @@ public class MapManager
         if (collision != null)
             collision.SetActive(false);
 
-        // Ãæµ¹ ¿µ¿ª ºÒ·¯¿À±â
+        // ì¶©ëŒ ì˜ì—­ ë¶ˆëŸ¬ì˜¤ê¸°
         TextAsset txt = Managers.Resource.Load<TextAsset>($"Map/{mapName}");
         StringReader reader = new StringReader(txt.text);
 
@@ -100,7 +100,7 @@ public class MapManager
             }
         }
 
-        // ¹è°æ ¼³Á¤ÇÏ±â
+        // ë°°ê²½ ì„¤ì •í•˜ê¸°
         int backgroundId = int.Parse(reader.ReadLine());
         float settingY = float.Parse(reader.ReadLine());
         SetBackground(go, backgroundId, settingY);
@@ -113,20 +113,18 @@ public class MapManager
 
         while (x < MaxX)
         {
-            // »ý¼º
+            // ìƒì„±
             GameObject go = Managers.Resource.Instantiate($"BackGround/{backgroundName}", parentGo.transform);
 
-            // ¹è°æ ³Êºñ ±¸ÇÏ±â
+            // ë°°ê²½ ë„ˆë¹„ êµ¬í•˜ê¸°
             if (width == -1.0f)
             {
                 SpriteRenderer sprite = Util.FindChild<SpriteRenderer>(go, "Background1", false);
-
                 width = sprite.bounds.size.x;
             }
 
-            // ¹è°æ À§Ä¡ Á¶Á¤
+            // ë°°ê²½ ìœ„ì¹˜ ì¡°ì •
             go.transform.position = new Vector3(x, settingY, 0);
-
             x += width;
         }
     }
