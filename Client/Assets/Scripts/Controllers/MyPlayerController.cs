@@ -22,17 +22,23 @@ public class MyPlayerController : MonoBehaviour
         Left,
         Right,
     }
+    
+    float _moveSpeed = 5.0f; // ì´ë™ì†ë„
+    float _ag = 0.4f; // ì¤‘ë ¥ ê°€ì†ë„ (ì§ˆëŸ‰ì€ 1.0fë¡œ ê°€ì •)
+    float _jumpSpeed = 17.0f; // ì í”„ë ¥ (ì§ˆëŸ‰ì€ 1.0fë¡œ ê°€ì •)
 
-    // TODO: speed °ü·Ã ¼­¹öºÙÀÏ ¶§ ¾ø¾Ö±â
-    float _moveSpeed = 5.0f; // ÀÌµ¿¼Óµµ
-    float _ag = 0.4f; // Áß·Â °¡¼Óµµ (Áú·®Àº 1.0f·Î °¡Á¤)
-    float _jumpSpeed = 17.0f; // Á¡ÇÁ·Â (Áú·®Àº 1.0f·Î °¡Á¤)
-
+    public int ID { get; set; }
     Animator _animator;
     bool _movePressed = false;
     Coroutine _coroutine = null;
 
-    Vector3 _speedVec = new Vector3(0, 0, 0); // ¼Óµµ
+    public Vector3 Pos
+    {
+        get { return new Vector3(transform.position.x, transform.position.y, 0); }
+        set { transform.position = value; }
+    }
+
+    Vector3 _speedVec = new Vector3(0, 0, 0); // ì†ë„
     PlayerState _state = PlayerState.Idle;
     public PlayerState State
     {
@@ -86,13 +92,13 @@ public class MyPlayerController : MonoBehaviour
             Debug.Log(Managers.Map.SceneToArr(Managers.Map.FindClosePos(transform.position)));
         }
 
-        // »óÅÂ±â¹İ Update ½ÇÇà
+        // ìƒíƒœê¸°ë°˜ Update ì‹¤í–‰
         UpdateController();
         
-        //ÀÌµ¿ Àû¿ë
+        //ì´ë™ ì ìš©
         ApplyMove();
 
-        // ¹°¸® Àû¿ë
+        // ë¬¼ë¦¬ ì ìš©
         ApplyPhysic();
     }
 
@@ -125,7 +131,7 @@ public class MyPlayerController : MonoBehaviour
 
     void UpdateController()
     {
-        // ¹æÇâ ÀÔ·Â
+        // ë°©í–¥ ì…ë ¥
         switch (State)
         {
             case PlayerState.Idle:
@@ -135,7 +141,7 @@ public class MyPlayerController : MonoBehaviour
                 break;
         }
 
-        // »óÅÂ±â¹İ Update
+        // ìƒíƒœê¸°ë°˜ Update
         switch (State)
         {
             case PlayerState.Idle:
@@ -179,21 +185,21 @@ public class MyPlayerController : MonoBehaviour
 
     void UpdateIdle()
     {
-        // °ø°İ ÆÇÁ¤ ¸ÕÀú
+        // ê³µê²© íŒì • ë¨¼ì €
         if (Input.GetKey(KeyCode.A))
         {
             State = PlayerState.Attack;
             return;
         }
 
-        // Á¡ÇÁ ÆÇÁ¤
+        // ì í”„ íŒì •
         if (Input.GetKey(KeyCode.Space))
         {
             State = PlayerState.Jump;
             return;
         }
 
-        // ÀÌµ¿ ÆÇÁ¤
+        // ì´ë™ íŒì •
         if (_movePressed)
         {
             State = PlayerState.Walk;
@@ -203,21 +209,21 @@ public class MyPlayerController : MonoBehaviour
 
     void UpdateWalk()
     {
-        // °ø°İ ÆÇÁ¤ ¸ÕÀú
+        // ê³µê²© íŒì • ë¨¼ì €
         if (Input.GetKey(KeyCode.A))
         {
             State = PlayerState.Attack;
             return;
         }
 
-        // Á¡ÇÁ ÆÇÁ¤
+        // ì í”„ íŒì •
         if (Input.GetKey(KeyCode.Space))
         {
             State = PlayerState.Jump;
             return;
         }
 
-        // ÀÌµ¿ ÆÇÁ¤
+        // ì´ë™ íŒì •
         if (!_movePressed)
         {
             State = PlayerState.Idle;
@@ -237,7 +243,7 @@ public class MyPlayerController : MonoBehaviour
     {
         Vector3 nextPos = transform.position;
 
-        // X Ãà
+        // X ì¶•
         nextPos += Time.deltaTime * new Vector3(_speedVec.x, 0, 0);
         if (!Managers.Map.CanGo(nextPos))
         {
@@ -245,7 +251,7 @@ public class MyPlayerController : MonoBehaviour
         }
         transform.position = nextPos;
 
-        // Y Ãà
+        // Y ì¶•
         nextPos += Time.deltaTime * new Vector3(0, _speedVec.y, 0);
         if (!Managers.Map.CanGo(nextPos))
         {
@@ -255,12 +261,12 @@ public class MyPlayerController : MonoBehaviour
         transform.position = nextPos;
     }
 
-    // _speedVec¸¸ º¯È­
+    // _speedVecë§Œ ë³€í™”
     void ApplyPhysic()
     {
         Vector3 nextPosVec = _speedVec;
 
-        // ¹æÇâÅ°
+        // ë°©í–¥í‚¤
         if (_movePressed && (State == PlayerState.Walk || State == PlayerState.Jump))
         {
             if (Dir == MoveDir.Left)
@@ -279,7 +285,7 @@ public class MyPlayerController : MonoBehaviour
             nextPosVec.x = 0;
         }
 
-        // Áß·Â Àû¿ë
+        // ì¤‘ë ¥ ì ìš©
         nextPosVec += Vector3.down * _ag;
         if (Managers.Map.IsStand(transform.position))
         {
@@ -304,7 +310,7 @@ public class MyPlayerController : MonoBehaviour
 
     IEnumerator CoStartAttack()
     {
-        // ´ë±â ½Ã°£
+        // ëŒ€ê¸° ì‹œê°„
         yield return new WaitForSeconds(0.45f);
         State = PlayerState.Idle;
         _coroutine = null;
@@ -313,7 +319,7 @@ public class MyPlayerController : MonoBehaviour
     IEnumerator CoStartJump()
     {
         _speedVec += Vector3.up * _jumpSpeed;
-        // ´ë±â ½Ã°£
+        // ëŒ€ê¸° ì‹œê°„
         while (true)
         {
             yield return new WaitForSeconds(0.1f);
