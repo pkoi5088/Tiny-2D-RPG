@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,6 +11,7 @@ public class GameScene : BaseScene
         SceneType = Define.Scene.Game;
 
         Managers.Map.LoadMap(1);
+        Managers.Object.Add(true);
     }
 
     public override void Clear()
