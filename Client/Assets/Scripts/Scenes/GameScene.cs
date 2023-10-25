@@ -12,6 +12,7 @@ public class GameScene : BaseScene
 
         Managers.Map.LoadMap(1);
         Managers.Object.Add(true);
+        Managers.Object.Add(false);
     }
 
     public override void Clear()

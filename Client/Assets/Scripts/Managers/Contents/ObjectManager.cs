@@ -12,11 +12,11 @@ public class ObjectManager
 
     public void Add(bool isPlayer = true)
     {
-        if (MyPlayer != null)
-            return;
-
         if (isPlayer)
         {
+            if (MyPlayer != null)
+                return;
+
             // 플레이어
             GameObject go = Managers.Resource.Instantiate("Creature/Player");
             go.name = "Player";
@@ -32,6 +32,52 @@ public class ObjectManager
         else
         {
             // 몬스터
+            GameObject go = Managers.Resource.Instantiate("Creature/Monster");
+            go.name = "Monster";
+            _objects.Add(2, go);
+
+            MonsterController mc = go.GetComponent<MonsterController>();
+            mc.ID = 2;
+            mc.transform.position = (Vector3.up + Vector3.right) * 2.5f;
         }
+    }
+
+    public MyPlayerController GetClosestPlayer(Vector3 pos)
+    {
+        MyPlayerController ret = null;
+        float retDist = 0.0f;
+        foreach (GameObject obj in _objects.Values)
+        {
+            MyPlayerController mpc = obj.GetComponent<MyPlayerController>();
+            if (mpc == null)
+                continue;
+
+            if (ret == null)
+            {
+                ret = mpc;
+                retDist = (mpc.Pos - pos).magnitude;
+            }
+            else
+            {
+                float tDist = (mpc.Pos - pos).magnitude;
+                if (retDist > tDist)
+                {
+                    ret = mpc;
+                    retDist = tDist;
+                }
+            }
+        }
+        return ret;
+    }
+
+    public MyPlayerController GetClosestPlayer(Vector3 pos, float range)
+    {
+        MyPlayerController rmpc = GetClosestPlayer(pos);
+        if (rmpc == null)
+            return null;
+
+        if ((rmpc.Pos - pos).magnitude > range)
+            return null;
+        return rmpc;
     }
 }
