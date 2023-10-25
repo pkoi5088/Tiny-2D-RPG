@@ -3,86 +3,13 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Diagnostics;
+using static PlayerObj;
 
-public class MyPlayerController : MonoBehaviour
+public class MyPlayerController : CreatureController
 {
-    public enum PlayerState
-    {
-        Idle,
-        Walk,
-        Jump,
-        Attack,
-        Dead,
-    }
-
-    public enum MoveDir
-    {
-        Up,
-        Down,
-        Left,
-        Right,
-    }
-    
-    float _moveSpeed = 5.0f; // 이동속도
-    float _ag = 0.4f; // 중력 가속도 (질량은 1.0f로 가정)
-    float _jumpSpeed = 17.0f; // 점프력 (질량은 1.0f로 가정)
-
-    public int ID { get; set; }
-    Animator _animator;
     bool _movePressed = false;
-    Coroutine _coroutine = null;
 
-    public Vector3 Pos
-    {
-        get { return new Vector3(transform.position.x, transform.position.y, 0); }
-        set { transform.position = value; }
-    }
-
-    Vector3 _speedVec = new Vector3(0, 0, 0); // 속도
-    PlayerState _state = PlayerState.Idle;
-    public PlayerState State
-    {
-        get { return _state; }
-        set
-        {
-            if (_state == value)
-                return;
-
-            _state = value;
-            UpdateAnimation();
-        }
-    }
-    MoveDir _dir = MoveDir.Left;
-    public MoveDir Dir
-    {
-        get { return _dir; }
-        set
-        {
-            if (_dir == value)
-                return;
-
-            _dir = value;
-            if (value == MoveDir.Left)
-                transform.localScale = new Vector3(1, 1, 1);
-            else
-                transform.localScale = new Vector3(-1, 1, 1);
-            UpdateAnimation();
-        }
-    }
-
-    void Start()
-    {
-        Init();
-    }
-
-    void Init()
-    {
-        _animator = Util.FindChild(gameObject, "UnitRoot", false).GetComponent<Animator>();
-        State = PlayerState.Idle;
-        Dir = MoveDir.Right;
-    }
-
-    void Update()
+    protected override void UpdateController()
     {
         // TEST
         if (Input.GetKeyDown(KeyCode.Z))
@@ -92,78 +19,35 @@ public class MyPlayerController : MonoBehaviour
             Debug.Log(Managers.Map.SceneToArr(Managers.Map.FindClosePos(transform.position)));
         }
 
-        // 상태기반 Update 실행
-        UpdateController();
-        
-        //이동 적용
-        ApplyMove();
-
-        // 물리 적용
-        ApplyPhysic();
-    }
-
-    void UpdateAnimation()
-    {
-        if (_animator == null)
-            return;
-
-        if (State == PlayerState.Idle)
-        {
-            _animator.Play("Idle");
-        }
-        else if (State == PlayerState.Walk)
-        {
-            _animator.Play("Walk");
-        }
-        else if (State == PlayerState.Jump)
-        {
-            _animator.Play("Jump");
-        }
-        else if (State == PlayerState.Attack)
-        {
-            _animator.Play("Attack");
-        }
-        else if (State == PlayerState.Dead)
-        {
-            _animator.Play("Dead");
-        }
-    }
-
-    void UpdateController()
-    {
         // 방향 입력
         switch (State)
         {
-            case PlayerState.Idle:
-            case PlayerState.Walk:
-            case PlayerState.Jump:
+            case CreatureState.Idle:
+            case CreatureState.Walk:
+            case CreatureState.Jump:
                 GetDirInput();
                 break;
         }
 
-        // 상태기반 Update
+        // 공격 판정
         switch (State)
         {
-            case PlayerState.Idle:
-                UpdateIdle();
-                break;
-
-            case PlayerState.Walk:
-                UpdateWalk();
-                break;
-
-            case PlayerState.Jump:
-                UpdateJump();
-                break;
-
-            case PlayerState.Attack:
-                UpdateAttack();
-                break;
-
-            case PlayerState.Dead:
-                UpdateDead();
+            case CreatureState.Idle:
+            case CreatureState.Walk:
+                GetAttackInput();
                 break;
         }
+
+        // 점프 판정
+        switch (State)
+        {
+            case CreatureState.Idle:
+            case CreatureState.Walk:
+                GetJumpInput();
+                break;
+        }
+
+        base.UpdateController();
     }
 
     void GetDirInput()
@@ -183,91 +67,52 @@ public class MyPlayerController : MonoBehaviour
         }
     }
 
-    void UpdateIdle()
+    void GetAttackInput()
     {
         // 공격 판정 먼저
         if (Input.GetKey(KeyCode.A))
         {
-            State = PlayerState.Attack;
+            State = CreatureState.Attack;
             return;
         }
+    }
 
+    void GetJumpInput()
+    {
         // 점프 판정
         if (Input.GetKey(KeyCode.Space))
         {
-            State = PlayerState.Jump;
+            State = CreatureState.Jump;
             return;
         }
+    }
 
+    protected override void UpdateIdle()
+    {
         // 이동 판정
         if (_movePressed)
         {
-            State = PlayerState.Walk;
+            State = CreatureState.Walk;
             return;
         }
     }
 
-    void UpdateWalk()
+    protected override void UpdateWalk()
     {
-        // 공격 판정 먼저
-        if (Input.GetKey(KeyCode.A))
-        {
-            State = PlayerState.Attack;
-            return;
-        }
-
-        // 점프 판정
-        if (Input.GetKey(KeyCode.Space))
-        {
-            State = PlayerState.Jump;
-            return;
-        }
-
         // 이동 판정
         if (!_movePressed)
         {
-            State = PlayerState.Idle;
+            State = CreatureState.Idle;
             return;
         }
     }
 
-    void UpdateJump()
-    {
-        if (_coroutine == null)
-        {
-            _coroutine = StartCoroutine("CoStartJump");
-        }
-    }
-
-    void ApplyMove()
-    {
-        Vector3 nextPos = transform.position;
-
-        // X 축
-        nextPos += Time.deltaTime * new Vector3(_speedVec.x, 0, 0);
-        if (!Managers.Map.CanGo(nextPos))
-        {
-            nextPos = Managers.Map.GetCorrectionPos(transform.position, nextPos);
-        }
-        transform.position = nextPos;
-
-        // Y 축
-        nextPos += Time.deltaTime * new Vector3(0, _speedVec.y, 0);
-        if (!Managers.Map.CanGo(nextPos))
-        {
-            nextPos = Managers.Map.GetCorrectionPos(transform.position, nextPos);
-        }
-
-        transform.position = nextPos;
-    }
-
-    // _speedVec만 변화
-    void ApplyPhysic()
+    protected override void ApplyPhysic()
     {
         Vector3 nextPosVec = _speedVec;
 
         // 방향키
-        if (_movePressed && (State == PlayerState.Walk || State == PlayerState.Jump))
+        if (_movePressed && (State == CreatureState.Walk || State == CreatureState.Jump))
         {
             if (Dir == MoveDir.Left)
             {
@@ -284,52 +129,9 @@ public class MyPlayerController : MonoBehaviour
         {
             nextPosVec.x = 0;
         }
-
-        // 중력 적용
-        nextPosVec += Vector3.down * _ag;
-        if (Managers.Map.IsStand(transform.position))
-        {
-            nextPosVec.y = 0;
-        }
-
         _speedVec = nextPosVec;
-    }
 
-    void UpdateAttack()
-    {
-        if (_coroutine == null)
-        {
-            _coroutine = StartCoroutine("CoStartAttack");
-        }
-    }
-
-    void UpdateDead()
-    {
-
-    }
-
-    IEnumerator CoStartAttack()
-    {
-        // 대기 시간
-        yield return new WaitForSeconds(0.45f);
-        State = PlayerState.Idle;
-        _coroutine = null;
-    }
-
-    IEnumerator CoStartJump()
-    {
-        _speedVec += Vector3.up * _jumpSpeed;
-        // 대기 시간
-        while (true)
-        {
-            yield return new WaitForSeconds(0.1f);
-            if (Managers.Map.IsStand(transform.position))
-            {
-                State = PlayerState.Idle;
-                _coroutine = null;
-                yield break;
-            }
-        }
+        base.ApplyPhysic();
     }
 
     private void LateUpdate()
