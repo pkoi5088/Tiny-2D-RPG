@@ -5,7 +5,7 @@ using UnityEngine;
 public class MonsterController : CreatureController
 {
     MyPlayerController _target = null;
-    float _searchRange = 3.0f;
+    float _searchRange = 5.0f;
     float _attackRange = 0.8f;
 
     protected override void Init()
@@ -76,10 +76,34 @@ public class MonsterController : CreatureController
             return;
         }
 
+        // 점프 판정
+        if (Managers.Map.CanGo(GetFrontPos()) == false)
+        {
+            State = CreatureState.Jump;
+            return;
+        }
+
+        // 공격 판정
         if ((_target.Pos - Pos).magnitude < _attackRange)
         {
             State = CreatureState.Attack;
         }
+    }
+
+    Vector3 GetFrontPos()
+    {
+        Vector3 ret = Pos;
+
+        if (Dir == MoveDir.Left)
+        {
+            ret.x -= 0.1f;
+        }
+        else if (Dir == MoveDir.Right)
+        {
+            ret.x += 0.1f;
+        }
+
+        return ret;
     }
 
     protected override void ApplyPhysic()
